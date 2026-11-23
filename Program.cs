@@ -231,11 +231,29 @@ internal static class Program
 
     private static string? lastSessionList;
 
-    private static Task<Manager>? pendingManagerRequest;
+    private static DateTimeOffset nextManagerRequestAttempt = DateTimeOffset.MinValue;
 
     private static async Task<Manager> RequestManagerAsync()
     {
-        return await Manager.RequestAsync();
+        // RequestAsync может зависнуть внутри Windows. Не сохраняем
+        // незавершённый Task навсегда: после паузы пробуем новый запрос.
+        if (DateTimeOffset.Now < nextManagerRequestAttempt)
+        {
+            throw new TimeoutException(
+                "Запрос менеджера медиасессий недавно завершился тайм-аутом; повторная попытка отложена.");
+        }
+
+        try
+        {
+            var request = Manager.RequestAsync();
+            return await request.AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+        }
+        catch (TimeoutException)
+        {
+            nextManagerRequestAttempt = DateTimeOffset.Now.AddSeconds(15);
+            throw new TimeoutException(
+                "Windows не вернула менеджер медиасессий за 5 секунд. Повтор через 15 секунд.");
+        }
     }
 
     private static async Task<Session?> FindSessionAsync()
@@ -244,25 +262,7 @@ internal static class Program
 
         try
         {
-            // Получаем менеджер заново, чтобы проверить,
-            // влияет ли повторное получение на доступность сессий.
-            var request = pendingManagerRequest ??= RequestManagerAsync();
-
-            try
-            {
-                manager = await request.WaitAsync(TimeSpan.FromSeconds(5));
-            }
-            catch (TimeoutException)
-            {
-                throw new TimeoutException(
-                    "Windows не вернула менеджер медиасессий за 5 секунд.");
-            }
-            finally
-            {
-                if (request.IsCompleted)
-                    pendingManagerRequest = null;
-            }
-
+            manager = await RequestManagerAsync();
             allSessions = manager.GetSessions().ToList();
         }
         catch (Exception e)
@@ -338,28 +338,47 @@ internal static class Program
             return;
         }
 
-        Session session = (await FindSessionAsync())
-            ?? throw new InvalidOperationException(
-                "Яндекс Музыка временно недоступна через медиасессию Windows.");
+        Session? session = null;
+        try
+        {
+            session = await FindSessionAsync();
+        }
+        catch (Exception e)
+        {
+            // Если Windows Media Session API завис, используем глобальную
+            // мультимедийную клавишу как резервный способ управления.
+            Log("Медиасессия недоступна; пробуем мультимедийную клавишу: " + e.Message);
+        }
+
+        if (session == null)
+        {
+            ushort mediaKeyCode = action switch
+            {
+                "previous" => 0xB1,  // VK_MEDIA_PREV_TRACK
+                "playpause" => 0xB3, // VK_MEDIA_PLAY_PAUSE
+                "next" => 0xB0,      // VK_MEDIA_NEXT_TRACK
+                _ => (ushort)0
+            };
+
+            if (mediaKeyCode == 0)
+                return;
+
+            SendMediaKey(mediaKeyCode);
+            return;
+        }
 
         bool success;
-
-        // Далее остаётся существующий switch.
-
         switch (action)
         {
             case "previous":
                 success = await session.TrySkipPreviousAsync();
                 break;
-
             case "playpause":
                 success = await session.TryTogglePlayPauseAsync();
                 break;
-
             case "next":
                 success = await session.TrySkipNextAsync();
                 break;
-
             default:
                 return;
         }
@@ -528,6 +547,42 @@ internal static class Program
         }
 
         return result.ToString();
+    }
+
+    private static void SendMediaKey(ushort virtualKey)
+    {
+        var input = new[]
+        {
+            new INPUT
+            {
+                Type = 1,
+                Data = new INPUTUNION
+                {
+                    Keyboard = new KEYBDINPUT { Key = virtualKey }
+                }
+            },
+            new INPUT
+            {
+                Type = 1,
+                Data = new INPUTUNION
+                {
+                    Keyboard = new KEYBDINPUT
+                    {
+                        Key = virtualKey,
+                        Flags = 0x0002 // KEYEVENTF_KEYUP
+                    }
+                }
+            }
+        };
+
+        uint sent = SendInput(
+            (uint)input.Length,
+            input,
+            Marshal.SizeOf<INPUT>());
+
+        if (sent != input.Length)
+            throw new InvalidOperationException(
+                $"Windows не приняла мультимедийную клавишу 0x{virtualKey:X2}.");
     }
 
     private static async Task SendRatingKey(ushort scanCode)
