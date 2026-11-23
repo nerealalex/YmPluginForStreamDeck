@@ -273,7 +273,7 @@ internal static class Program
             if (e is not TimeoutException ||
                 !e.Message.Contains("повторная попытка отложена", StringComparison.OrdinalIgnoreCase))
             {
-                Log("Ошибка получения списка медиасессий:\n" + e);
+                // Log("Ошибка получения списка медиасессий:\n" + e);
             }
             throw;
         }
@@ -288,7 +288,7 @@ internal static class Program
             }
             catch (Exception e)
             {
-                Log("Ошибка чтения имени медиасессии:\n" + e);
+                // Log("Ошибка чтения имени медиасессии:\n" + e);
             }
         }
 
@@ -500,7 +500,7 @@ internal static class Program
             if (e is not TimeoutException ||
                 !e.Message.Contains("повторная попытка отложена", StringComparison.OrdinalIgnoreCase))
             {
-                Log(e.ToString());
+                // Log(e.ToString());
             }
             status = "Ошибка\nмедиасессии";
             cover = null;
