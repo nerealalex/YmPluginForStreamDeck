@@ -163,9 +163,11 @@ internal static class Program
                 else if (ev == "keyDown" &&
                          Buttons.TryGetValue(context, out string? action))
                 {
+                    Log($"Получен keyDown: action={action}, context={context}");
                     try
                     {
                         await Execute(action);
+                        Log($"Обработчик кнопки завершён: action={action}");
                     }
                     catch (Exception e)
                     {
@@ -586,14 +588,19 @@ internal static class Program
             }
         };
 
+        int inputSize = Marshal.SizeOf<INPUT>();
+        Marshal.SetLastPInvokeError(0);
         uint sent = SendInput(
             (uint)input.Length,
             input,
-            Marshal.SizeOf<INPUT>());
+            inputSize);
+        int error = Marshal.GetLastPInvokeError();
+
+        Log($"SendInput media key 0x{virtualKey:X2}: sent={sent}/{input.Length}, INPUT size={inputSize}, Win32Error={error}");
 
         if (sent != input.Length)
             throw new InvalidOperationException(
-                $"Windows не приняла мультимедийную клавишу 0x{virtualKey:X2}.");
+                $"Windows не приняла мультимедийную клавишу 0x{virtualKey:X2}; SendInput={sent}/{input.Length}, Win32Error={error}.");
     }
 
     private static async Task SendRatingKey(ushort scanCode)
