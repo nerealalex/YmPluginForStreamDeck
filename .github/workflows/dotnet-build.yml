@@ -1,0 +1,28 @@
+name: .NET build
+
+on:
+  push:
+    paths:
+      - '**.cs'
+      - '**.csproj'
+      - '.github/workflows/dotnet-build.yml'
+      - 'Build.ps1'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up .NET 10 SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Show .NET SDK
+        run: dotnet --info
+
+      - name: Build project
+        run: dotnet build .\YmDeck.csproj --configuration Release
