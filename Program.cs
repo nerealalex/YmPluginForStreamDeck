@@ -75,7 +75,7 @@ internal static class Program
                 await polling;
             }
         }
-        catch (Exception e)
+        catch (Exception)
         {
             Log(e.ToString());
         }
@@ -169,7 +169,7 @@ internal static class Program
                         await Execute(action);
                         // Log($"Обработчик кнопки завершён: action={action}");
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         Log(e.ToString());
                         await Send(new { @event = "showAlert", context });
@@ -178,7 +178,7 @@ internal static class Program
                     await Refresh();
                 }
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 Log(e.ToString());
             }
@@ -205,7 +205,7 @@ internal static class Program
 
                     await Refresh();
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     Log(e.ToString());
                 }
@@ -267,7 +267,7 @@ internal static class Program
             manager = await RequestManagerAsync();
             allSessions = manager.GetSessions().ToList();
         }
-        catch (Exception e)
+        catch (Exception)
         {
             // Во время периода ожидания не засоряем журнал одинаковыми тайм-аутами.
             if (e is not TimeoutException ||
@@ -286,7 +286,7 @@ internal static class Program
             {
                 entries.Add((session, session.SourceAppUserModelId));
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // Log("Ошибка чтения имени медиасессии:\n" + e);
             }
@@ -350,7 +350,7 @@ internal static class Program
         {
             session = await FindSessionAsync();
         }
-        catch (Exception e)
+        catch (Exception)
         {
             // Если Windows Media Session API завис, используем глобальную
             // мультимедийную клавишу как резервный способ управления.
@@ -471,7 +471,7 @@ internal static class Program
                             }
                         }
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         // Log("Обложка: " + e.Message);
                     }
@@ -493,7 +493,7 @@ internal static class Program
                       Short(lastTrackArtist);
             }
         }
-        catch (Exception e)
+        catch (Exception)
         {
             // Повторный опрос выполняется каждую секунду, но не нужно писать
             // одну и ту же ошибку в журнал во время 15-секундной паузы.
@@ -602,7 +602,7 @@ internal static class Program
                 // Log($"WM_APPCOMMAND action={action}, hwnd=0x{window.ToInt64():X}, command={command}, result={result}");
                 return true;
             }
-            catch (Exception e)
+            catch (Exception)
             {
                 // Log("WM_APPCOMMAND: " + e.Message);
             }
