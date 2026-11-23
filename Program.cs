@@ -43,6 +43,12 @@ internal static class Program
             }
 
             string port = Arg("-port");
+            if (!int.TryParse(port, out int portNumber) ||
+                portNumber is < 1 or > 65535)
+            {
+                throw new ArgumentException("Параметр -port должен быть числом от 1 до 65535.");
+            }
+
             string pluginId = Arg("-pluginUUID");
             string registerEvent = Arg("-registerEvent");
 
@@ -50,7 +56,7 @@ internal static class Program
             // Log("Менеджер медиасессий получен");
 
             await Socket.ConnectAsync(
-                new Uri($"ws://127.0.0.1:{port}"),
+                new Uri($"ws://127.0.0.1:{portNumber}"),
                 CancellationToken.None);
 
             await Send(new { @event = registerEvent, uuid = pluginId });
