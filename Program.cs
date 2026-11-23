@@ -370,7 +370,11 @@ internal static class Program
             if (mediaKeyCode == 0)
                 return;
 
-            SendMediaKey(mediaKeyCode);
+            // Сначала пробуем WM_APPCOMMAND непосредственно для окна Яндекс Музыки.
+            // SendInput с VK_MEDIA_* успешно принимается Windows, но приложение
+            // может не обрабатывать эти глобальные клавиши.
+            if (!TrySendYandexAppCommand(action))
+                SendMediaKey(mediaKeyCode);
             return;
         }
 
@@ -560,6 +564,56 @@ internal static class Program
         }
 
         return result.ToString();
+    }
+
+    private static bool TrySendYandexAppCommand(string action)
+    {
+        int command = action switch
+        {
+            "previous" => 12,  // APPCOMMAND_MEDIA_PREVIOUSTRACK
+            "playpause" => 14, // APPCOMMAND_MEDIA_PLAY_PAUSE
+            "next" => 11,      // APPCOMMAND_MEDIA_NEXTTRACK
+            _ => 0
+        };
+
+        if (command == 0)
+            return false;
+
+        string expectedPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+            "Programs", "YandexMusic", "Яндекс Музыка.exe");
+
+        foreach (Process process in Process.GetProcesses())
+        {
+            try
+            {
+                if (process.MainWindowHandle == IntPtr.Zero ||
+                    !string.Equals(
+                        process.MainModule?.FileName,
+                        expectedPath,
+                        StringComparison.OrdinalIgnoreCase))
+                    continue;
+
+                IntPtr window = process.MainWindowHandle;
+                IntPtr lParam = (IntPtr)(command << 16);
+
+                // WM_APPCOMMAND = 0x0319. Передаём команду целевому окну.
+                IntPtr result = SendMessage(window, 0x0319, window, lParam);
+                Log($"WM_APPCOMMAND action={action}, hwnd=0x{window.ToInt64():X}, command={command}, result={result}");
+                return true;
+            }
+            catch (Exception e)
+            {
+                Log("WM_APPCOMMAND: " + e.Message);
+            }
+            finally
+            {
+                process.Dispose();
+            }
+        }
+
+        Log("Окно Яндекс Музыки не найдено для WM_APPCOMMAND.");
+        return false;
     }
 
     private static void SendMediaKey(ushort virtualKey)
@@ -784,6 +838,10 @@ internal static class Program
 
     [DllImport("user32.dll")]
     private static extern short GetAsyncKeyState(int key);
+
+    [DllImport("user32.dll", SetLastError = true)]
+    private static extern IntPtr SendMessage(
+        IntPtr window, uint message, IntPtr wParam, IntPtr lParam);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern uint SendInput(
