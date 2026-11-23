@@ -267,7 +267,12 @@ internal static class Program
         }
         catch (Exception e)
         {
-            Log("Ошибка получения списка медиасессий:\n" + e);
+            // Во время периода ожидания не засоряем журнал одинаковыми тайм-аутами.
+            if (e is not TimeoutException ||
+                !e.Message.Contains("повторная попытка отложена", StringComparison.OrdinalIgnoreCase))
+            {
+                Log("Ошибка получения списка медиасессий:\n" + e);
+            }
             throw;
         }
 
@@ -484,7 +489,13 @@ internal static class Program
         }
         catch (Exception e)
         {
-            Log(e.ToString());
+            // Повторный опрос выполняется каждую секунду, но не нужно писать
+            // одну и ту же ошибку в журнал во время 15-секундной паузы.
+            if (e is not TimeoutException ||
+                !e.Message.Contains("повторная попытка отложена", StringComparison.OrdinalIgnoreCase))
+            {
+                Log(e.ToString());
+            }
             status = "Ошибка\nмедиасессии";
             cover = null;
         }
