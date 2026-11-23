@@ -32,7 +32,7 @@ internal static class Program
     {
         try
         {
-            Log("Старт YmDeck");
+            // Log("Старт YmDeck");
             string Arg(string name)
             {
                 int i = Array.IndexOf(args, name);
@@ -60,7 +60,7 @@ internal static class Program
                 CancellationToken.None);
 
             await Send(new { @event = registerEvent, uuid = pluginId });
-            Log("Сообщение регистрации отправлено");
+            // Log("Сообщение регистрации отправлено");
 
             using var stop = new CancellationTokenSource();
             Task polling = Poll(stop.Token);
@@ -148,7 +148,7 @@ internal static class Program
             {
                 if (ev == "willAppear")
                 {
-                    Log("Stream Deck сообщил о появлении кнопки");
+                    // Log("Stream Deck сообщил о появлении кнопки");
                     string action = root.GetProperty("action").GetString() ?? "";
                     Buttons[context] = action.Split('.').Last();
                     Sent.Remove(context);
@@ -163,11 +163,11 @@ internal static class Program
                 else if (ev == "keyDown" &&
                          Buttons.TryGetValue(context, out string? action))
                 {
-                    Log($"Получен keyDown: action={action}, context={context}");
+                    // Log($"Получен keyDown: action={action}, context={context}");
                     try
                     {
                         await Execute(action);
-                        Log($"Обработчик кнопки завершён: action={action}");
+                        // Log($"Обработчик кнопки завершён: action={action}");
                     }
                     catch (Exception e)
                     {
@@ -301,7 +301,7 @@ internal static class Program
         if (sessionList != lastSessionList)
         {
             lastSessionList = sessionList;
-            Log("Медиасессии Windows: " + sessionList);
+            // Log("Медиасессии Windows: " + sessionList);
         }
 
         var matches = entries
@@ -354,7 +354,7 @@ internal static class Program
         {
             // Если Windows Media Session API завис, используем глобальную
             // мультимедийную клавишу как резервный способ управления.
-            Log("Медиасессия недоступна; пробуем мультимедийную клавишу: " + e.Message);
+            // Log("Медиасессия недоступна; пробуем мультимедийную клавишу: " + e.Message);
         }
 
         if (session == null)
@@ -473,7 +473,7 @@ internal static class Program
                     }
                     catch (Exception e)
                     {
-                        Log("Обложка: " + e.Message);
+                        // Log("Обложка: " + e.Message);
                     }
                 }
 
@@ -599,12 +599,12 @@ internal static class Program
 
                 // WM_APPCOMMAND = 0x0319. Передаём команду целевому окну.
                 IntPtr result = SendMessage(window, 0x0319, window, lParam);
-                Log($"WM_APPCOMMAND action={action}, hwnd=0x{window.ToInt64():X}, command={command}, result={result}");
+                // Log($"WM_APPCOMMAND action={action}, hwnd=0x{window.ToInt64():X}, command={command}, result={result}");
                 return true;
             }
             catch (Exception e)
             {
-                Log("WM_APPCOMMAND: " + e.Message);
+                // Log("WM_APPCOMMAND: " + e.Message);
             }
             finally
             {
@@ -612,7 +612,7 @@ internal static class Program
             }
         }
 
-        Log("Окно Яндекс Музыки не найдено для WM_APPCOMMAND.");
+        // Log("Окно Яндекс Музыки не найдено для WM_APPCOMMAND.");
         return false;
     }
 
@@ -650,7 +650,7 @@ internal static class Program
             inputSize);
         int error = Marshal.GetLastPInvokeError();
 
-        Log($"SendInput media key 0x{virtualKey:X2}: sent={sent}/{input.Length}, INPUT size={inputSize}, Win32Error={error}");
+        // Log($"SendInput media key 0x{virtualKey:X2}: sent={sent}/{input.Length}, INPUT size={inputSize}, Win32Error={error}");
 
         if (sent != input.Length)
             throw new InvalidOperationException(
