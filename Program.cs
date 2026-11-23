@@ -245,8 +245,8 @@ internal static class Program
 
         try
         {
-            var request = Manager.RequestAsync();
-            return await request.AsTask().WaitAsync(TimeSpan.FromSeconds(5));
+            return await Task.Run(async () => await Manager.RequestAsync())
+                .WaitAsync(TimeSpan.FromSeconds(5));
         }
         catch (TimeoutException)
         {
