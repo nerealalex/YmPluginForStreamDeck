@@ -75,7 +75,7 @@ internal static class Program
                 await polling;
             }
         }
-        catch (Exception)
+        catch (Exception e)
         {
             Log(e.ToString());
         }
@@ -169,7 +169,7 @@ internal static class Program
                         await Execute(action);
                         // Log($"Обработчик кнопки завершён: action={action}");
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
                         Log(e.ToString());
                         await Send(new { @event = "showAlert", context });
@@ -178,7 +178,7 @@ internal static class Program
                     await Refresh();
                 }
             }
-            catch (Exception)
+            catch (Exception e)
             {
                 Log(e.ToString());
             }
@@ -205,7 +205,7 @@ internal static class Program
 
                     await Refresh();
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
                     Log(e.ToString());
                 }
@@ -267,7 +267,7 @@ internal static class Program
             manager = await RequestManagerAsync();
             allSessions = manager.GetSessions().ToList();
         }
-        catch (Exception)
+        catch (Exception e)
         {
             // Во время периода ожидания не засоряем журнал одинаковыми тайм-аутами.
             if (e is not TimeoutException ||
@@ -493,7 +493,7 @@ internal static class Program
                       Short(lastTrackArtist);
             }
         }
-        catch (Exception)
+        catch (Exception e)
         {
             // Повторный опрос выполняется каждую секунду, но не нужно писать
             // одну и ту же ошибку в журнал во время 15-секундной паузы.
